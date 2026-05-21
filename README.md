@@ -71,31 +71,7 @@ To change which editor opens your files: `Project → Settings`.
 
 ---
 
-## Scripts
 
-NeuDel-II scripts expose two entry points:
-
-```rust
-// Rust
-pub fn init() { }
-pub fn update(delta: f32) { }
-```
-
-```java
-// Java
-public void init() { }
-public void update(float delta) { }
-```
-
-```python
-# Python
-def init(): pass
-def update(delta: float): pass
-```
-
-The engine calls `init()` once when the entity is created and `update()` every frame. That's the contract. Everything else is up to you.
-
----
 
 ## Project Structure
 
