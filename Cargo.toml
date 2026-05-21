@@ -1,0 +1,21 @@
+[workspace]
+members = [
+    "engine",
+]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["NeuDel-II Team"]
+
+[workspace.dependencies]
+# Engine core (future)
+wgpu = "22"
+winit = "0.30"
+rapier2d = { version = "0.22", features = ["default"] }
+rodio = "0.20"
+hecs = "0.10"
+
+# Scripting bridges (future)
+pyo3 = { version = "0.25", features = ["auto-initialize"] }

@@ -1,0 +1,17 @@
+[package]
+name = "engine"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[lib]
+name = "engine"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# Core systems — uncomment as each module is implemented
+# wgpu.workspace = true
+# winit.workspace = true
+# rapier2d.workspace = true
+# rodio.workspace = true
+# hecs.workspace = true
