@@ -12,9 +12,7 @@ No forks, no shortcuts — just raw Rust, a custom editor, and full control over
 
 1. **A game engine** — written in Rust. Handles rendering, physics, audio, and a full entity-component system. Supports scripting in Rust, Java, and Python.
 
-2. **A studio editor** — a desktop app where you place assets on a canvas, build scenes, and forward your scripts straight to whatever editor you use (VS Code, JetBrains, anything).
-
-Right now the studio is live. The engine runtime is being built next.
+2. **A studio editor** — a desktop app where you place assets on a canvas, build scenes, and forward your scripts straight to whatever editor you use (VS Code, JetBrains, anything). Also pure Rust — UI is [GPUI](https://www.gpui.rs/), no HTML, no JS, no bundler.
 
 ---
 
@@ -22,11 +20,12 @@ Right now the studio is live. The engine runtime is being built next.
 
 You need these installed before anything else:
 
-- [Rust](https://rustup.rs/) — `rustup` is the easiest way
-- [Node.js](https://nodejs.org/) v18 or higher
+- [Rust](https://rustup.rs/) — `rustup` is the easiest way (stable toolchain)
 - On macOS: Xcode Command Line Tools (`xcode-select --install`)
-- On Linux: `webkit2gtk`, `libgtk-3-dev` (check [Tauri prerequisites](https://tauri.app/start/prerequisites/))
+- On Linux: GPUI's system deps — `libxkbcommon`, `libwayland`, `libssl`, `pkg-config` (see the [GPUI README](https://github.com/zed-industries/zed/tree/main/crates/gpui))
 - On Windows: Microsoft Visual C++ Build Tools
+
+No Node.js. No npm. No Tauri.
 
 ---
 
@@ -37,12 +36,8 @@ You need these installed before anything else:
 git clone <repo-url>
 cd engine-dev
 
-# 2. Install frontend dependencies
-cd studio
-npm install
-
-# 3. That's it. Run it.
-npm run tauri dev
+# 2. Run it. (First build pulls GPUI from the Zed repo — slow, then cached.)
+cargo run -p studio
 ```
 
 The studio window opens. You're ready to build.
@@ -53,33 +48,36 @@ The studio window opens. You're ready to build.
 
 **Open a project**
 
-Hit `File → Open Project` and point it at any folder. It can be a new empty folder or an existing project. The asset browser populates automatically.
+Hit `Open Project...` and point it at any folder. The asset browser populates automatically.
 
 **Place assets on the canvas**
 
-Drag any image (`.png`, `.jpg`) from the asset browser at the bottom onto the dark canvas. That's your first entity. Click it to select it, drag it to move it, edit the numbers in the Inspector panel to get precise control.
+Click any image in the asset browser — a banner appears on the canvas. Click anywhere on the canvas to drop the asset there as a new entity. Select it by clicking. The Inspector on the right lets you nudge transform values with `+`/`−` buttons.
 
 **Write scripts**
 
-Right-click any `.rs`, `.java`, or `.py` file in the asset browser and hit **Open in Editor**. It opens directly in your configured editor. Double-clicking works too.
+Click any `.rs`, `.java`, or `.py` file in the asset browser — it opens in your configured external editor.
 
-To change which editor opens your files: `Project → Settings`.
+To change which editor opens your files: `Settings` in the menu bar.
 
 **Save your scene**
 
-`File → Save Scene` — saves everything to a `.ndscene` file you can reload later.
+`Save Scene` — saves to a `.ndscene` file (plain JSON) you can reload later.
 
 ---
-
-
 
 ## Project Structure
 
 ```
 engine-dev/
-├── engine/      ← Rust core (ECS, renderer, physics, audio, scripting)
-├── studio/      ← Desktop editor (Tauri + React + PixiJS)
-└── progress.md  ← Detailed build log and technical decisions
+├── engine/      ← Rust runtime crate (ECS, renderer, physics, audio, scripting)
+├── studio/      ← Pure-Rust editor (GPUI)
+│   └── src/
+│       ├── model.rs       ← entity/component/asset types
+│       ├── services/      ← filesystem, scene I/O, settings, editor launch
+│       ├── state.rs       ← central studio state
+│       └── ui/            ← menu bar, panels, modals
+└── progress.md  ← Build log and technical decisions
 ```
 
 ---
@@ -88,6 +86,7 @@ engine-dev/
 
 - [x] Studio editor — canvas, asset browser, inspector, scene save/load
 - [x] Script file forwarding to external editor
+- [x] Pure-Rust frontend (GPUI) — no JS/TS/HTML
 - [ ] Engine runtime — wgpu sprite renderer, winit event loop
 - [ ] Entity Component System — hecs
 - [ ] 2D physics — rapier2d (platformer collisions, triggers)
@@ -101,7 +100,7 @@ engine-dev/
 - [ ] Dialogue system — branching text, portraits
 - [ ] Python scripting — PyO3
 - [ ] Java scripting — JNI / GraalVM
-- [ ] Studio ↔ Engine live connection
+- [ ] Studio ↔ Engine live connection (preview an actual engine viewport inside the studio canvas)
 
 ---
 
@@ -115,10 +114,9 @@ engine-dev/
 | Audio | rodio |
 | ECS | hecs |
 | Python bridge | PyO3 |
-| Editor shell | Tauri v2 |
-| Editor UI | React + TypeScript |
-| Canvas | PixiJS v8 |
-| State | Zustand |
+| Studio UI | [GPUI](https://www.gpui.rs/) (Zed's UI framework) |
+| File dialogs | rfd |
+| Scene format | JSON (`.ndscene`) |
 
 ---
 
