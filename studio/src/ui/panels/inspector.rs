@@ -123,11 +123,16 @@ impl Render for Inspector {
         );
 
         if let Some(t) = ent.transform().cloned() {
-            let id1 = id.clone();
-            let id2 = id.clone();
-            let id3 = id.clone();
-            let id4 = id.clone();
-            let id5 = id.clone();
+            let id_x_m = id.clone();
+            let id_x_p = id.clone();
+            let id_y_m = id.clone();
+            let id_y_p = id.clone();
+            let id_sx_m = id.clone();
+            let id_sx_p = id.clone();
+            let id_sy_m = id.clone();
+            let id_sy_p = id.clone();
+            let id_r_m = id.clone();
+            let id_r_p = id.clone();
             panel = panel.child(
                 div()
                     .px(px(12.))
@@ -140,20 +145,20 @@ impl Render for Inspector {
                             .child(SharedString::from("Transform")),
                     )
                     .child(self.row("x", format!("{:.1}", t.x), cx,
-                        move |s, cx| { let id = id1.clone(); s.update_transform(&id, |t| t.x -= 8.0, cx) },
-                        move |s, cx| { let id = id1.clone(); s.update_transform(&id, |t| t.x += 8.0, cx) }))
+                        move |s, cx| { s.update_transform(&id_x_m, |t| t.x -= 8.0, cx) },
+                        move |s, cx| { s.update_transform(&id_x_p, |t| t.x += 8.0, cx) }))
                     .child(self.row("y", format!("{:.1}", t.y), cx,
-                        move |s, cx| { let id = id2.clone(); s.update_transform(&id, |t| t.y -= 8.0, cx) },
-                        move |s, cx| { let id = id2.clone(); s.update_transform(&id, |t| t.y += 8.0, cx) }))
+                        move |s, cx| { s.update_transform(&id_y_m, |t| t.y -= 8.0, cx) },
+                        move |s, cx| { s.update_transform(&id_y_p, |t| t.y += 8.0, cx) }))
                     .child(self.row("scaleX", format!("{:.2}", t.scale_x), cx,
-                        move |s, cx| { let id = id3.clone(); s.update_transform(&id, |t| t.scale_x = (t.scale_x - 0.1).max(0.1), cx) },
-                        move |s, cx| { let id = id3.clone(); s.update_transform(&id, |t| t.scale_x += 0.1, cx) }))
+                        move |s, cx| { s.update_transform(&id_sx_m, |t| t.scale_x = (t.scale_x - 0.1).max(0.1), cx) },
+                        move |s, cx| { s.update_transform(&id_sx_p, |t| t.scale_x += 0.1, cx) }))
                     .child(self.row("scaleY", format!("{:.2}", t.scale_y), cx,
-                        move |s, cx| { let id = id4.clone(); s.update_transform(&id, |t| t.scale_y = (t.scale_y - 0.1).max(0.1), cx) },
-                        move |s, cx| { let id = id4.clone(); s.update_transform(&id, |t| t.scale_y += 0.1, cx) }))
+                        move |s, cx| { s.update_transform(&id_sy_m, |t| t.scale_y = (t.scale_y - 0.1).max(0.1), cx) },
+                        move |s, cx| { s.update_transform(&id_sy_p, |t| t.scale_y += 0.1, cx) }))
                     .child(self.row("rotation", format!("{:.2}", t.rotation), cx,
-                        move |s, cx| { let id = id5.clone(); s.update_transform(&id, |t| t.rotation -= 0.1, cx) },
-                        move |s, cx| { let id = id5.clone(); s.update_transform(&id, |t| t.rotation += 0.1, cx) })),
+                        move |s, cx| { s.update_transform(&id_r_m, |t| t.rotation -= 0.1, cx) },
+                        move |s, cx| { s.update_transform(&id_r_p, |t| t.rotation += 0.1, cx) })),
             );
         }
 
