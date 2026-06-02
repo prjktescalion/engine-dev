@@ -13,6 +13,7 @@ pub enum Component {
     Transform(TransformComponent),
     Sprite(SpriteComponent),
     Script(ScriptComponent),
+    Velocity(VelocityComponent),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -51,6 +52,14 @@ pub struct ScriptComponent {
     #[serde(rename = "filePath")]
     pub file_path: String,
     pub lang: ScriptLang,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct VelocityComponent {
+    pub vx: f32,
+    pub vy: f32,
+    #[serde(default)]
+    pub vrot: f32,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -96,6 +105,28 @@ impl Entity {
             Component::Sprite(s) => Some(s),
             _ => None,
         })
+    }
+
+    pub fn velocity(&self) -> Option<&VelocityComponent> {
+        self.components.iter().find_map(|c| match c {
+            Component::Velocity(v) => Some(v),
+            _ => None,
+        })
+    }
+
+    pub fn velocity_mut(&mut self) -> Option<&mut VelocityComponent> {
+        self.components.iter_mut().find_map(|c| match c {
+            Component::Velocity(v) => Some(v),
+            _ => None,
+        })
+    }
+
+    pub fn ensure_velocity(&mut self) -> &mut VelocityComponent {
+        if self.velocity().is_none() {
+            self.components
+                .push(Component::Velocity(VelocityComponent::default()));
+        }
+        self.velocity_mut().expect("just inserted")
     }
 }
 
