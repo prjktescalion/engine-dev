@@ -1,8 +1,10 @@
 //! Root view — assembles the menu bar, four panels, and settings modal.
 
+use std::time::Duration;
+
 use gpui::{
     div, prelude::*, px, rgb, App, Context, Entity, EventEmitter, IntoElement, ParentElement,
-    Render, Styled, Window,
+    Render, Styled, Task, Window,
 };
 
 use super::menubar::MenuBar;
@@ -12,12 +14,14 @@ use super::panels::{
 };
 use super::theme;
 use crate::services::scene as scene_svc;
-use crate::state::StudioState;
+use crate::state::{PlayState, StudioState};
 
 /// Holds modal/transient UI flags + dispatches dialog actions.
 pub struct StudioActions {
     pub state: Entity<StudioState>,
     pub show_settings: bool,
+    /// Handle to the running play loop. Dropped on stop so the task exits.
+    pub play_task: Option<Task<()>>,
 }
 
 pub struct ActionsChanged;
@@ -28,7 +32,88 @@ impl StudioActions {
         Self {
             state,
             show_settings: false,
+            play_task: None,
         }
+    }
+
+    pub fn play(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        // Already running? Resume if paused.
+        let current = self.state.read(cx).play_state;
+        match current {
+            PlayState::Playing => return,
+            PlayState::Paused => {
+                self.state.update(cx, |s, cx| s.pause_play(cx));
+                return;
+            }
+            PlayState::Stopped => {}
+        }
+
+        self.state.update(cx, |s, cx| s.start_play(cx));
+
+        // Spawn the play loop. ~60Hz tick. Loop exits when play_state leaves
+        // Playing|Paused (i.e. on Stop), or when the entity goes away.
+        let state = self.state.clone();
+        let task = cx.spawn(async move |_this, cx| {
+            let executor = cx.background_executor().clone();
+            let dt = 1.0_f32 / 60.0;
+            let dur = Duration::from_secs_f32(dt);
+            loop {
+                executor.timer(dur).await;
+                let keep_going = state.update(cx, |s, cx| match s.play_state {
+                    PlayState::Playing => {
+                        s.step_engine(dt, cx);
+                        true
+                    }
+                    PlayState::Paused => true,
+                    PlayState::Stopped => false,
+                });
+                if !keep_going {
+                    break;
+                }
+            }
+        });
+        self.play_task = Some(task);
+        cx.emit(ActionsChanged);
+        cx.notify();
+    }
+
+    pub fn pause(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        self.state.update(cx, |s, cx| s.pause_play(cx));
+        cx.emit(ActionsChanged);
+        cx.notify();
+    }
+
+    pub fn stop(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        self.state.update(cx, |s, cx| s.stop_play(cx));
+        // Drop the task handle; the loop notices Stopped and exits.
+        self.play_task = None;
+        cx.emit(ActionsChanged);
+        cx.notify();
+    }
+
+    /// Drop a few entities with velocities into the scene so Play has
+    /// something visible to do.
+    pub fn spawn_demo(&mut self, _window: &mut Window, cx: &mut Context<Self>) {
+        use crate::model::{Component, Entity as SceneEntity, TransformComponent, VelocityComponent};
+        self.state.update(cx, |s, cx| {
+            let seeds = [
+                ("Rocket A", 200.0, 200.0, 120.0, 60.0),
+                ("Rocket B", 500.0, 350.0, -90.0, 80.0),
+                ("Rocket C", 320.0, 450.0, 70.0, -100.0),
+            ];
+            for (name, x, y, vx, vy) in seeds {
+                let mut e = SceneEntity::new(name);
+                e.components.push(Component::Transform(TransformComponent {
+                    x,
+                    y,
+                    ..Default::default()
+                }));
+                e.components
+                    .push(Component::Velocity(VelocityComponent { vx, vy, vrot: 0.5 }));
+                s.add_entity(e, cx);
+            }
+            s.log("Spawned 3 demo entities. Press Play.", cx);
+        });
     }
 
     pub fn toggle_settings(&mut self, _window: &mut Window, cx: &mut Context<Self>) {

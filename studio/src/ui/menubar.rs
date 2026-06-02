@@ -1,12 +1,12 @@
 //! Top menu bar with File/Project actions.
 
 use gpui::{
-    div, prelude::*, px, rgb, ClickEvent, Context, Entity, IntoElement, ParentElement, Render,
-    SharedString, Styled, Window,
+    div, prelude::*, px, rgb, Context, Entity, IntoElement, ParentElement, Render, SharedString,
+    Styled, Window,
 };
 
 use super::theme;
-use crate::state::StudioState;
+use crate::state::{PlayState, StudioState};
 use crate::ui::root::StudioActions;
 
 pub struct MenuBar {
@@ -25,12 +25,22 @@ impl MenuBar {
         cx: &mut Context<Self>,
         on_click: impl Fn(&mut StudioActions, &mut Window, &mut Context<StudioActions>) + 'static,
     ) -> impl IntoElement {
+        self.button_styled(label, theme::TEXT, cx, on_click)
+    }
+
+    fn button_styled(
+        &self,
+        label: &'static str,
+        color: u32,
+        cx: &mut Context<Self>,
+        on_click: impl Fn(&mut StudioActions, &mut Window, &mut Context<StudioActions>) + 'static,
+    ) -> impl IntoElement {
         let actions = self.actions.clone();
         div()
             .px(px(10.))
             .py(px(4.))
             .rounded(px(4.))
-            .text_color(rgb(theme::TEXT))
+            .text_color(rgb(color))
             .hover(|s| s.bg(rgb(theme::PANEL_ALT)))
             .cursor_pointer()
             .child(SharedString::from(label))
@@ -54,6 +64,9 @@ impl Render for MenuBar {
         } else {
             scene_name
         };
+        let play_state = state.play_state;
+        let entity_count = state.scene.entities.len();
+        let tps = state.tps;
 
         div()
             .flex()
@@ -98,9 +111,46 @@ impl Render for MenuBar {
             .child(self.button("Settings", cx, |a, window, cx| {
                 a.toggle_settings(window, cx)
             }))
+            .child(
+                div()
+                    .w(px(1.))
+                    .h(px(20.))
+                    .mx(px(6.))
+                    .bg(rgb(theme::BORDER)),
+            )
+            .child(self.button_styled(
+                match play_state {
+                    PlayState::Playing => "▶ Playing",
+                    PlayState::Paused => "▶ Resume",
+                    PlayState::Stopped => "▶ Play",
+                },
+                match play_state {
+                    PlayState::Playing => theme::ACCENT,
+                    _ => theme::TEXT,
+                },
+                cx,
+                |a, window, cx| a.play(window, cx),
+            ))
+            .child(self.button("⏸ Pause", cx, |a, window, cx| a.pause(window, cx)))
+            .child(self.button_styled("■ Stop", theme::DANGER, cx, |a, window, cx| {
+                a.stop(window, cx)
+            }))
+            .child(self.button("✨ Spawn Demo", cx, |a, window, cx| {
+                a.spawn_demo(window, cx)
+            }))
             .child(div().flex_grow(1.0))
             .child(
                 div()
+                    .px(px(8.))
+                    .text_color(rgb(theme::TEXT_DIM))
+                    .child(SharedString::from(format!(
+                        "{} entities · {:.0} tps",
+                        entity_count, tps
+                    ))),
+            )
+            .child(
+                div()
+                    .px(px(8.))
                     .text_color(rgb(theme::TEXT_DIM))
                     .child(SharedString::from(title)),
             )
