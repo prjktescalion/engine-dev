@@ -47,7 +47,7 @@ impl Hierarchy {
             }))
             .hover(|s| s.bg(rgb(theme::PANEL_ALT)))
             .cursor_pointer()
-            .child(div().flex_grow().child(SharedString::from(name)))
+            .child(div().flex_grow(1.0).child(SharedString::from(name)))
             .child(
                 div()
                     .px(px(6.))
@@ -114,7 +114,7 @@ impl Render for Hierarchy {
                     .border_color(rgb(theme::BORDER))
                     .text_color(rgb(theme::TEXT_DIM))
                     .child(SharedString::from("HIERARCHY"))
-                    .child(div().flex_grow())
+                    .child(div().flex_grow(1.0))
                     .child(
                         div()
                             .px(px(8.))

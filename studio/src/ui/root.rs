@@ -135,7 +135,7 @@ impl Render for Studio {
                 div()
                     .flex()
                     .flex_row()
-                    .flex_grow()
+                    .flex_grow(1.0)
                     .min_h(px(0.))
                     .child(self.hierarchy.clone())
                     .child(self.canvas.clone())
@@ -160,7 +160,7 @@ impl Render for Studio {
                     )
                     .child(
                         div()
-                            .flex_grow()
+                            .flex_grow(1.0)
                             .h_full()
                             .bg(rgb(theme::PANEL))
                             .child(self.console.clone()),

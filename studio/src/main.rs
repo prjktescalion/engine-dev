@@ -8,8 +8,6 @@ mod services;
 mod state;
 mod ui;
 
-use gpui::Application;
-
 fn main() {
-    Application::new().run(|cx| ui::root::run(cx));
+    gpui_platform::application().run(|cx| ui::root::run(cx));
 }

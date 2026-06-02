@@ -98,7 +98,7 @@ impl Render for MenuBar {
             .child(self.button("Settings", cx, |a, window, cx| {
                 a.toggle_settings(window, cx)
             }))
-            .child(div().flex_grow())
+            .child(div().flex_grow(1.0))
             .child(
                 div()
                     .text_color(rgb(theme::TEXT_DIM))

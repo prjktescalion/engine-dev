@@ -40,7 +40,7 @@ impl Render for SceneCanvas {
         let mut surface = div()
             .id("scene-canvas")
             .relative()
-            .flex_grow()
+            .flex_grow(1.0)
             .h_full()
             .bg(rgb(theme::BG))
             .overflow_hidden()
@@ -79,8 +79,8 @@ impl Render for SceneCanvas {
             .on_mouse_down(
                 MouseButton::Left,
                 cx.listener(move |_this, ev: &MouseDownEvent, _window, cx| {
-                    let x = ev.position.x.0;
-                    let y = ev.position.y.0;
+                    let x = f32::from(ev.position.x);
+                    let y = f32::from(ev.position.y);
                     state.update(cx, |s, cx| {
                         if let Some(asset) = s.pending_drop_asset.clone() {
                             s.place_asset(asset, x, y, cx);

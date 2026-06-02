@@ -32,7 +32,7 @@ impl SettingsModal {
         label: &'static str,
         active: bool,
         cx: &mut Context<Self>,
-        mut on_click: impl FnMut(&mut StudioState, &mut Context<StudioState>) + 'static,
+        on_click: impl Fn(&mut StudioState, &mut Context<StudioState>) + 'static,
     ) -> impl IntoElement {
         let state = self.state.clone();
         div()
@@ -98,7 +98,7 @@ impl Render for SettingsModal {
                             .border_color(rgb(theme::BORDER))
                             .child(
                                 div()
-                                    .flex_grow()
+                                    .flex_grow(1.0)
                                     .text_color(rgb(theme::TEXT))
                                     .child(SharedString::from("Editor Settings")),
                             )

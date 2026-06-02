@@ -26,7 +26,7 @@ impl Inspector {
         &self,
         label: &'static str,
         cx: &mut Context<Self>,
-        mut on_click: impl FnMut(&mut StudioState, &mut Context<StudioState>) + 'static,
+        on_click: impl Fn(&mut StudioState, &mut Context<StudioState>) + 'static,
     ) -> impl IntoElement {
         let state = self.state.clone();
         div()
@@ -51,8 +51,8 @@ impl Inspector {
         label: &'static str,
         value: String,
         cx: &mut Context<Self>,
-        minus: impl FnMut(&mut StudioState, &mut Context<StudioState>) + 'static,
-        plus: impl FnMut(&mut StudioState, &mut Context<StudioState>) + 'static,
+        minus: impl Fn(&mut StudioState, &mut Context<StudioState>) + 'static,
+        plus: impl Fn(&mut StudioState, &mut Context<StudioState>) + 'static,
     ) -> impl IntoElement {
         div()
             .flex()
@@ -206,7 +206,7 @@ impl Render for Inspector {
                         .py(px(2.))
                         .child(
                             div()
-                                .flex_grow()
+                                .flex_grow(1.0)
                                 .text_color(rgb(theme::TEXT_DIM))
                                 .text_size(px(11.))
                                 .child(SharedString::from(path.clone())),

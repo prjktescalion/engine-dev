@@ -20,10 +20,10 @@ No forks, no shortcuts — just raw Rust, a custom editor, and full control over
 
 You need these installed before anything else:
 
-- [Rust](https://rustup.rs/) — `rustup` is the easiest way (stable toolchain)
-- On macOS: Xcode Command Line Tools (`xcode-select --install`)
-- On Linux: GPUI's system deps — `libxkbcommon`, `libwayland`, `libssl`, `pkg-config` (see the [GPUI README](https://github.com/zed-industries/zed/tree/main/crates/gpui))
-- On Windows: Microsoft Visual C++ Build Tools
+- [Rust](https://rustup.rs/) via `rustup`. The repo pins **nightly** in `rust-toolchain.toml` (GPUI uses `cold_path`, an unstable intrinsic) — `rustup` reads that automatically.
+- On macOS: **full Xcode** (App Store), not just the Command Line Tools. GPUI compiles Metal shaders at build time via `xcrun metal`, which only ships in the full Xcode bundle. After install, run `sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer`.
+- On Linux: GPUI's system deps — `libxkbcommon`, `libwayland`, `libssl`, `pkg-config` (see the [GPUI README](https://github.com/zed-industries/zed/tree/main/crates/gpui)).
+- On Windows: Microsoft Visual C++ Build Tools.
 
 No Node.js. No npm. No Tauri.
 

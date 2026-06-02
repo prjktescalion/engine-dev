@@ -59,7 +59,7 @@ impl AssetBrowser {
             )
             .child(
                 div()
-                    .flex_grow()
+                    .flex_grow(1.0)
                     .text_size(px(12.))
                     .child(SharedString::from(label)),
             )
@@ -137,7 +137,7 @@ impl Render for AssetBrowser {
         div()
             .flex()
             .flex_col()
-            .flex_grow()
+            .flex_grow(1.0)
             .h_full()
             .child(
                 div()

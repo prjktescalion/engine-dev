@@ -36,7 +36,7 @@ impl Render for Console {
         div()
             .flex()
             .flex_col()
-            .flex_grow()
+            .flex_grow(1.0)
             .h_full()
             .child(
                 div()
