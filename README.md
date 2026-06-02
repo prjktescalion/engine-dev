@@ -46,13 +46,17 @@ The studio window opens. You're ready to build.
 
 ## Using the Studio
 
+**See it work in 5 seconds**
+
+`Spawn Demo` (in the menu bar) drops three entities with velocities into the scene. Press `▶ Play`. The engine integrates positions at ~60 Hz, bounces them off the world bounds, and the canvas re-renders each tick. The pill on the right of the menu bar shows entity count and live ticks-per-second. `■ Stop` reverts to the authored transforms — editing isn't destructive.
+
 **Open a project**
 
 Hit `Open Project...` and point it at any folder. The asset browser populates automatically.
 
 **Place assets on the canvas**
 
-Click any image in the asset browser — a banner appears on the canvas. Click anywhere on the canvas to drop the asset there as a new entity. Select it by clicking. The Inspector on the right lets you nudge transform values with `+`/`−` buttons.
+Click any image in the asset browser — a banner appears on the canvas. Click anywhere on the canvas to drop the asset there as a new entity. Select it by clicking. The Inspector on the right lets you nudge transform values with `+`/`−` buttons, and you can add a Velocity component (`+ Velocity`) to make the entity move when you press Play.
 
 **Write scripts**
 
@@ -87,7 +91,9 @@ engine-dev/
 - [x] Studio editor — canvas, asset browser, inspector, scene save/load
 - [x] Script file forwarding to external editor
 - [x] Pure-Rust frontend (GPUI) — no JS/TS/HTML
-- [ ] Engine runtime — wgpu sprite renderer, winit event loop
+- [x] Engine runtime — ECS-lite (Vec<Entity>), 60Hz tick, Transform + Velocity integrator
+- [x] Studio ↔ Engine live connection — Play/Pause/Stop drives the engine; canvas reflects live simulation
+- [ ] Engine renderer — replace ECS-lite with hecs; wgpu sprite renderer, winit event loop
 - [ ] Entity Component System — hecs
 - [ ] 2D physics — rapier2d (platformer collisions, triggers)
 - [ ] Tilemap — load Tiled `.tmj` maps, chunked rendering
