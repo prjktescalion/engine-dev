@@ -1,12 +1,9 @@
 //! NeuDel-II Game Engine — runtime crate.
 //!
-//! This crate is the engine *backend* the studio drives. Subsystems are
-//! still stubs: real implementations land here once each module is wired
-//! up (wgpu renderer, hecs ECS, rapier2d physics, rodio audio, scripting
-//! bridges for Rust/Java/Python).
-//!
-//! Studio talks to the engine through the [`Engine`] struct and the per-
-//! subsystem traits defined in each submodule.
+//! Wireframe-level MVP: an [`Engine`] owns a [`World`] of entities with
+//! transforms + optional velocity, plus subsystem stubs that will grow into
+//! real wgpu/rapier2d/rodio backends. The studio drives a live simulation by
+//! calling [`Engine::tick`] on a timer.
 
 pub mod audio;
 pub mod ecs;
@@ -15,7 +12,7 @@ pub mod renderer;
 pub mod scripting;
 
 use audio::Audio;
-use ecs::World;
+use ecs::{EntityId, World};
 use physics::PhysicsWorld;
 use renderer::Renderer;
 use scripting::ScriptHost;
@@ -27,6 +24,8 @@ pub struct Engine {
     pub physics: PhysicsWorld,
     pub audio: Audio,
     pub scripts: ScriptHost,
+    pub elapsed: f32,
+    pub tick_count: u64,
 }
 
 impl Engine {
@@ -37,20 +36,39 @@ impl Engine {
             physics: PhysicsWorld::new(),
             audio: Audio::new(),
             scripts: ScriptHost::new(),
+            elapsed: 0.0,
+            tick_count: 0,
         }
     }
 
-    /// Advance the simulation by `dt` seconds. Stub; real fixed-timestep
-    /// integration lives here once subsystems are real.
+    /// Reset world + counters. Subsystem state is preserved.
+    pub fn reset(&mut self) {
+        self.world.clear();
+        self.elapsed = 0.0;
+        self.tick_count = 0;
+    }
+
+    /// Advance the simulation by `dt` seconds.
     pub fn tick(&mut self, dt: f32) {
         self.scripts.update(dt);
         self.physics.step(dt);
         self.world.run_systems(dt);
+        self.elapsed += dt;
+        self.tick_count += 1;
     }
 
-    /// Render the current world. Stub.
+    /// Render the current world. Stub until wgpu lands; for now the studio
+    /// reads `world.entities` directly to build its preview.
     pub fn render(&mut self) {
         self.renderer.draw(&self.world);
+    }
+
+    pub fn entity_count(&self) -> usize {
+        self.world.len()
+    }
+
+    pub fn spawn(&mut self, name: impl Into<String>) -> EntityId {
+        self.world.spawn(name)
     }
 }
 
