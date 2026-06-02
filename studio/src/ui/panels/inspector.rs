@@ -7,7 +7,7 @@ use gpui::{
     ParentElement, Render, SharedString, Styled, Window,
 };
 
-use crate::model::Component;
+use crate::model::{Component, VelocityComponent};
 use crate::services::editor as editor_svc;
 use crate::state::StudioState;
 use crate::ui::theme;
@@ -159,6 +159,88 @@ impl Render for Inspector {
                     .child(self.row("rotation", format!("{:.2}", t.rotation), cx,
                         move |s, cx| { s.update_transform(&id_r_m, |t| t.rotation -= 0.1, cx) },
                         move |s, cx| { s.update_transform(&id_r_p, |t| t.rotation += 0.1, cx) })),
+            );
+        }
+
+        // Velocity row (or an Add button if absent)
+        if let Some(v) = ent.velocity().cloned() {
+            let id_vx_m = id.clone();
+            let id_vx_p = id.clone();
+            let id_vy_m = id.clone();
+            let id_vy_p = id.clone();
+            let id_vr_m = id.clone();
+            let id_vr_p = id.clone();
+            let id_rm = id.clone();
+            panel = panel.child(
+                div()
+                    .px(px(12.))
+                    .py(px(6.))
+                    .flex()
+                    .flex_col()
+                    .child(
+                        div()
+                            .flex()
+                            .flex_row()
+                            .items_center()
+                            .child(
+                                div()
+                                    .flex_grow(1.0)
+                                    .text_color(rgb(theme::ACCENT))
+                                    .child(SharedString::from("Velocity")),
+                            )
+                            .child(self.nudge_button("✕", cx, move |s, cx| {
+                                let id = id_rm.clone();
+                                s.update_entity(
+                                    &id,
+                                    |e| e.components.retain(|c| !matches!(c, Component::Velocity(_))),
+                                    cx,
+                                );
+                            })),
+                    )
+                    .child(self.row("vx", format!("{:.1}", v.vx), cx,
+                        move |s, cx| { let id = id_vx_m.clone(); s.update_entity(&id, |e| { if let Some(v) = e.velocity_mut() { v.vx -= 20.0; } }, cx); },
+                        move |s, cx| { let id = id_vx_p.clone(); s.update_entity(&id, |e| { if let Some(v) = e.velocity_mut() { v.vx += 20.0; } }, cx); }))
+                    .child(self.row("vy", format!("{:.1}", v.vy), cx,
+                        move |s, cx| { let id = id_vy_m.clone(); s.update_entity(&id, |e| { if let Some(v) = e.velocity_mut() { v.vy -= 20.0; } }, cx); },
+                        move |s, cx| { let id = id_vy_p.clone(); s.update_entity(&id, |e| { if let Some(v) = e.velocity_mut() { v.vy += 20.0; } }, cx); }))
+                    .child(self.row("vrot", format!("{:.2}", v.vrot), cx,
+                        move |s, cx| { let id = id_vr_m.clone(); s.update_entity(&id, |e| { if let Some(v) = e.velocity_mut() { v.vrot -= 0.25; } }, cx); },
+                        move |s, cx| { let id = id_vr_p.clone(); s.update_entity(&id, |e| { if let Some(v) = e.velocity_mut() { v.vrot += 0.25; } }, cx); })),
+            );
+        } else {
+            let id_add = id.clone();
+            panel = panel.child(
+                div().px(px(12.)).py(px(6.)).child(
+                    div()
+                        .px(px(8.))
+                        .py(px(2.))
+                        .rounded(px(3.))
+                        .bg(rgb(theme::PANEL_ALT))
+                        .text_color(rgb(theme::ACCENT))
+                        .hover(|s| s.bg(rgb(theme::BORDER)))
+                        .cursor_pointer()
+                        .child(SharedString::from("+ Velocity"))
+                        .on_mouse_down(
+                            MouseButton::Left,
+                            cx.listener(move |this, _ev: &MouseDownEvent, _window, cx| {
+                                let id = id_add.clone();
+                                this.state.update(cx, |s, cx| {
+                                    s.update_entity(
+                                        &id,
+                                        |e| {
+                                            e.components
+                                                .push(Component::Velocity(VelocityComponent {
+                                                    vx: 60.0,
+                                                    vy: 0.0,
+                                                    vrot: 0.0,
+                                                }));
+                                        },
+                                        cx,
+                                    );
+                                });
+                            }),
+                        ),
+                ),
             );
         }
 

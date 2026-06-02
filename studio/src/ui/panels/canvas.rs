@@ -147,6 +147,7 @@ impl Render for SceneCanvas {
                     }),
                 );
 
+            let has_velocity = ent.velocity().is_some();
             if let Some(sprite) = ent.sprite() {
                 let path = PathBuf::from(&sprite.asset_path);
                 if path.exists() {
@@ -156,6 +157,19 @@ impl Render for SceneCanvas {
                 }
             } else {
                 node = node.child(SharedString::from(ent.name.clone()));
+            }
+            if has_velocity {
+                // Tiny ring in the corner that says "this thing moves"
+                node = node.child(
+                    div()
+                        .absolute()
+                        .top(px(-4.))
+                        .right(px(-4.))
+                        .w(px(8.))
+                        .h(px(8.))
+                        .rounded(px(4.))
+                        .bg(rgb(theme::ACCENT)),
+                );
             }
             surface = surface.child(node);
         }
