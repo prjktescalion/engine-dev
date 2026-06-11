@@ -1,0 +1,10 @@
+[package]
+name = "ball"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+engine = { path = "../engine", features = ["render"] }
+winit.workspace = true
+anyhow.workspace = true
