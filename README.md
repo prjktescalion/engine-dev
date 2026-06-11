@@ -22,6 +22,7 @@ You need these installed before anything else:
 
 - [Rust](https://rustup.rs/) via `rustup`. The repo pins **nightly** in `rust-toolchain.toml` (GPUI uses `cold_path`, an unstable intrinsic) — `rustup` reads that automatically.
 - On macOS: **full Xcode** (App Store), not just the Command Line Tools. GPUI compiles Metal shaders at build time via `xcrun metal`, which only ships in the full Xcode bundle. After install, run `sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer`.
+  - On Xcode 26+ the Metal compiler is a separate download. If the studio build fails with `cannot execute tool 'metal' due to missing Metal Toolchain`, run `xcodebuild -runFirstLaunch` followed by `xcodebuild -downloadComponent MetalToolchain` (~700 MB).
 - On Linux: GPUI's system deps — `libxkbcommon`, `libwayland`, `libssl`, `pkg-config` (see the [GPUI README](https://github.com/zed-industries/zed/tree/main/crates/gpui)).
 - On Windows: Microsoft Visual C++ Build Tools.
 
@@ -70,11 +71,67 @@ To change which editor opens your files: `Settings` in the menu bar.
 
 ---
 
+## Engine Core — ECS
+
+The runtime's heart is a **from-scratch sparse-set ECS** (`engine/src/ecs/`). We evaluated Bevy and hecs and decided against both — Bevy alone adds minutes of build time and hundreds of dependencies for an engine whose whole point is understanding every layer ourselves.
+
+Three pieces, in the EnTT style:
+
+| Module | What it does |
+|---|---|
+| `ecs/entity.rs` | Generational entity ids + free-list allocator. Spawn/despawn are O(1); a stale handle can never alias a recycled slot — every lookup checks the generation. |
+| `ecs/sparse_set.rs` | Per-component storage: dense `Vec<T>` (contiguous, cache-friendly to iterate) + sparse index map (O(1) insert/get/remove, swap-pop removal). |
+| `ecs/world.rs` | A fixed roster of typed stores (name, transform, velocity, sprite) plus the movement system, which walks only entities that actually have a velocity. |
+
+Why it matters: the old wireframe core (`Vec<Entity>` + linear `find`) made the studio's per-frame transform write-back O(n²). Measured on the bundled benchmark:
+
+```bash
+cargo run --release -p engine --example ecs_bench
+```
+
+| workload (10k entities) | naive `Vec<Entity>` | sparse-set | speedup |
+|---|---|---|---|
+| spawn + init | 40.7 ms | 0.8 ms | ~52× |
+| tick ×600 | 6.4 ms | 5.6 ms | ~1.1× |
+| per-id write-back ×60 frames | 1814.6 ms | 1.1 ms | **~1700×** |
+
+At 100k entities the naive write-back doesn't finish in reasonable time; the sparse-set core does it in ~11 ms. The unit tests (`cargo test -p engine`) cover allocator recycling, stale-handle safety, swap-remove bookkeeping, and the bounce integrator.
+
+---
+
+## Engine Core — Rendering
+
+The render core (`engine/src/renderer/`, behind the `render` cargo feature) is **winit + wgpu with hand-written WGSL** — the runtime owns its surface and shaders rather than extending gpui's paint system, so shading means real fragment shaders and a game binary doesn't link the editor framework. The full decision (including why wgpu clears the bar that Bevy didn't) is in `progress.md`. wgpu translates the WGSL at runtime, so the runtime never needs the Xcode Metal Toolchain.
+
+| Module | What it does |
+|---|---|
+| `renderer/atlas.rs` | CPU SDF rasterizer + shelf packer — circles/rounded-rects/capsules become one R8 coverage texture at startup. No image assets. |
+| `renderer/sprite.rs` | Instanced sprite batch: one draw call, quad synthesized in the vertex shader, design-space coordinates. |
+| `renderer/lcd.rs` | LCD panel post-process (fragment shader): gradient, vignette, dot-matrix grain, posterization. |
+| `renderer/gpu.rs` | Device/swapchain orchestration; two passes per frame (sprites → ink texture → LCD → screen). |
+
+**Try it — the Game & Watch demo:**
+
+```bash
+cargo run -p ball
+```
+
+A standalone runtime binary (no studio, no gpui) running **Ball (1980)** on the engine ECS: two balls bounce along a 7-station arc on a discrete tick clock, ←/→ set the hand pose, catches score, three misses ends it, and the clock speeds up as you score. Every LCD segment is always drawn — unlit ones as faint ghosts, the signature unlit-LCD look. Space restarts, Esc quits.
+
+Renderer throughput (`cargo run --release -p engine --features render --example sprite_bench`, Apple M2, headless): ~52M sprites/sec at 100k sprites/frame (1.9 ms); the demo's ~36 segments cost 0.1 ms.
+
+---
+
 ## Project Structure
 
 ```
 engine-dev/
-├── engine/      ← Rust runtime crate (ECS, renderer, physics, audio, scripting)
+├── engine/      ← Rust runtime crate
+│   ├── src/ecs/       ← from-scratch sparse-set ECS (entity allocator, storage, world)
+│   ├── src/renderer/  ← wgpu render core: shape atlas, sprite batch, LCD shader (feature "render")
+│   ├── src/…          ← physics, audio, scripting (stubs)
+│   └── examples/      ← ecs_bench, sprite_bench
+├── ball/        ← standalone Game & Watch "Ball" runtime (winit + engine, no studio)
 ├── studio/      ← Pure-Rust editor (GPUI)
 │   └── src/
 │       ├── model.rs       ← entity/component/asset types
@@ -93,8 +150,9 @@ engine-dev/
 - [x] Pure-Rust frontend (GPUI) — no JS/TS/HTML
 - [x] Engine runtime — ECS-lite (Vec<Entity>), 60Hz tick, Transform + Velocity integrator
 - [x] Studio ↔ Engine live connection — Play/Pause/Stop drives the engine; canvas reflects live simulation
-- [ ] Engine renderer — replace ECS-lite with hecs; wgpu sprite renderer, winit event loop
-- [ ] Entity Component System — hecs
+- [x] Entity Component System — custom sparse-set ECS, built from scratch (no Bevy, no hecs): generational entity ids, O(1) component access, cache-friendly system iteration. See [Engine Core](#engine-core--ecs).
+- [x] Engine renderer — wgpu sprite renderer (instanced batch, procedural SDF atlas) + custom WGSL shading (LCD post-process). See [Rendering](#engine-core--rendering).
+- [x] Standalone game runtime — `cargo run -p ball`: Game & Watch *Ball* on the engine ECS, fixed-timestep, ghost-segment LCD look
 - [ ] 2D physics — rapier2d (platformer collisions, triggers)
 - [ ] Tilemap — load Tiled `.tmj` maps, chunked rendering
 - [ ] Sprite animation — spritesheet frame sequencer + state machine
@@ -115,10 +173,11 @@ engine-dev/
 | Layer | Technology |
 |---|---|
 | Engine core | Rust |
-| Rendering | wgpu |
+| Rendering | wgpu + custom WGSL (runtime-compiled — no Metal Toolchain needed) |
+| Windowing (runtime) | winit |
 | Physics | rapier2d |
 | Audio | rodio |
-| ECS | hecs |
+| ECS | custom sparse-set (from scratch — no Bevy/hecs) |
 | Python bridge | PyO3 |
 | Studio UI | [GPUI](https://www.gpui.rs/) (Zed's UI framework) |
 | File dialogs | rfd |

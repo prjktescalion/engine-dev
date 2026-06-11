@@ -8,10 +8,21 @@ authors.workspace = true
 name = "engine"
 crate-type = ["cdylib", "rlib"]
 
+[[example]]
+name = "sprite_bench"
+required-features = ["render"]
+
+[features]
+# GPU render core (wgpu sprite batcher + LCD post pass). Off by default so the
+# studio doesn't compile wgpu; the game runtime enables it.
+render = ["dep:wgpu", "dep:pollster", "dep:bytemuck", "dep:anyhow"]
+
 [dependencies]
+wgpu = { workspace = true, optional = true }
+pollster = { workspace = true, optional = true }
+bytemuck = { workspace = true, optional = true }
+anyhow = { workspace = true, optional = true }
 # Core systems — uncomment as each module is implemented
-# wgpu.workspace = true
 # winit.workspace = true
 # rapier2d.workspace = true
 # rodio.workspace = true
-# hecs.workspace = true

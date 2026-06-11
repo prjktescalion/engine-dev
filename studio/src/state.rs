@@ -246,26 +246,32 @@ impl StudioState {
         for ent in &self.scene.entities {
             let eid = self.engine.spawn(ent.name.clone());
             self.entity_id_map.insert(ent.id.clone(), eid);
-            if let Some(world_ent) = self.engine.world.get_mut(eid) {
-                if let Some(t) = ent.transform() {
-                    world_ent.transform.x = t.x;
-                    world_ent.transform.y = t.y;
-                    world_ent.transform.scale_x = t.scale_x;
-                    world_ent.transform.scale_y = t.scale_y;
-                    world_ent.transform.rotation = t.rotation;
+            if let Some(t) = ent.transform() {
+                if let Some(world_t) = self.engine.world.transform_mut(eid) {
+                    world_t.x = t.x;
+                    world_t.y = t.y;
+                    world_t.scale_x = t.scale_x;
+                    world_t.scale_y = t.scale_y;
+                    world_t.rotation = t.rotation;
                 }
-                if let Some(v) = ent.velocity() {
-                    world_ent.velocity = Some(EngineVelocity {
+            }
+            if let Some(v) = ent.velocity() {
+                self.engine.world.set_velocity(
+                    eid,
+                    EngineVelocity {
                         vx: v.vx,
                         vy: v.vy,
                         vrot: v.vrot,
-                    });
-                }
-                if let Some(s) = ent.sprite() {
-                    world_ent.sprite = Some(EngineSprite {
+                    },
+                );
+            }
+            if let Some(s) = ent.sprite() {
+                self.engine.world.set_sprite(
+                    eid,
+                    EngineSprite {
                         asset_path: s.asset_path.clone(),
-                    });
-                }
+                    },
+                );
             }
         }
     }
@@ -335,13 +341,14 @@ impl StudioState {
             let Some(&eid) = self.entity_id_map.get(&ent.id) else {
                 continue;
             };
-            let Some(world_ent) = self.engine.world.get(eid) else {
+            let Some(world_t) = self.engine.world.transform(eid) else {
                 continue;
             };
+            let (x, y, rotation) = (world_t.x, world_t.y, world_t.rotation);
             if let Some(t) = ent.transform_mut() {
-                t.x = world_ent.transform.x;
-                t.y = world_ent.transform.y;
-                t.rotation = world_ent.transform.rotation;
+                t.x = x;
+                t.y = y;
+                t.rotation = rotation;
             }
         }
         cx.emit(StateChanged);
